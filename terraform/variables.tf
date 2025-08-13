@@ -3,11 +3,11 @@ variable "aws_region" {
 }
 
 variable "instance_type" {
-  default = "t2.micro"
+  default = "t3.medium"
 }
 
 variable "key_name" {
-  description = "Existing AWS Key Pair name"
+  description = "newacc"
 }
 
 variable "vpc_id" {}

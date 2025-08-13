@@ -1,36 +1,52 @@
 name: Deploy SonarQube
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ap-south-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TERRAFORM_WORKSPACE: default
+      TF_VAR_key_name: newacc   # <-- your existing AWS key name
+
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.5
 
-    - name: Terraform Init
-      run: terraform -chdir=terraform init
+      - name: Terraform Init
+        run: terraform -chdir=terraform init
 
-    - name: Terraform Apply
-      id: tf_apply
-      run: terraform -chdir=terraform apply -auto-approve
+      - name: Terraform Apply
+        run: terraform -chdir=terraform apply -auto-approve
 
-    - name: Get SonarQube IP
-      id: get_ip
-      run: |
-        echo "SONAR_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip)" >> $GITHUB_ENV
+      - name: Get instance IP
+        id: ec2
+        run: |
+          INSTANCE_IP=$(terraform -chdir=terraform output -raw instance_ip)
+          echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
 
-    - name: Install Ansible
-      run: sudo apt update && sudo apt install -y ansible sshpass
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible python3-psycopg2
 
-    - name: Prepare Ansible Inventory
-      run: echo "[sonarqube_servers]\n$SONAR_IP ansible_user=ubuntu ansible_ssh_private_key_file=./terraform/your-key.pem" > ansible/inventory.ini
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > newacc.pem
+          chmod 400 newacc.pem
 
-    - name: Run SonarQube Playbook
-      run: ansible-playbook -i ansible/inventory.ini ansible/install-sonarqube.yml
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i "${{ env.INSTANCE_IP }}," --private-key newacc.pem --user ubuntu install-sonarqube.yml

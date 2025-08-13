@@ -25,7 +25,7 @@ resource "aws_security_group" "sonar_sg" {
 }
 
 resource "aws_instance" "sonarqube" {
-  ami           = "ami-0c02fb55956c7d316"
+  ami           = "ami-0f918f7e67a3323f0"
   instance_type = var.instance_type
   key_name      = var.key_name
   subnet_id     = var.subnet_id
