@@ -1,0 +1,147 @@
+---
+# Install required system packages including Python dev packages for psycopg2
+- name: Install Python and psycopg2 system packages
+  apt:
+    name:
+      - python3
+      - python3-psycopg2
+      - python3-venv
+      - libpq-dev
+      - python3-dev
+      - openjdk-17-jdk
+      - postgresql
+      - postgresql-contrib
+      - unzip
+      - wget
+    state: present
+    update_cache: yes
+  become: yes
+
+# Start and enable PostgreSQL
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+  become: yes
+
+# Create PostgreSQL user for SonarQube (if it does not exist)
+- name: Create PostgreSQL user for SonarQube
+  shell: |
+    sudo -u postgres psql -v ON_ERROR_STOP=1 -c "
+    DO \$\$
+    BEGIN
+       IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = 'sonar') THEN
+           CREATE USER sonar WITH PASSWORD 'sonar';
+       END IF;
+    END
+    \$\$;"
+  args:
+    executable: /bin/bash
+
+# Create SonarQube PostgreSQL database (if it does not exist)
+- name: Create SonarQube PostgreSQL database
+  shell: |
+    sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='sonarqube'" | grep -q 1 || sudo -u postgres createdb -O sonar -E UTF8 sonarqube
+  args:
+    executable: /bin/bash
+
+
+# Download SonarQube latest version
+- name: Download SonarQube
+  get_url:
+    url: https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-25.8.0.112029.zip
+    dest: /tmp/sonarqube.zip
+    mode: '0644'
+  become: yes
+
+# Extract SonarQube
+- name: Extract SonarQube
+  unarchive:
+    src: /tmp/sonarqube.zip
+    dest: /opt/
+    remote_src: yes
+  become: yes
+
+# Rename extracted folder to /opt/sonarqube
+- name: Rename SonarQube folder
+  command: mv /opt/sonarqube-25.8.0.112029 /opt/sonarqube
+  args:
+    removes: /opt/sonarqube-25.8.0.112029
+    creates: /opt/sonarqube
+  become: yes
+
+# Create SonarQube group
+- name: Create SonarQube group
+  group:
+    name: sonar
+    state: present
+  become: yes
+
+# Create SonarQube user
+- name: Create SonarQube user
+  user:
+    name: sonar
+    group: sonar
+    system: yes
+    create_home: no
+  become: yes
+
+# Set permissions for SonarQube folder
+- name: Set permissions for SonarQube
+  file:
+    path: /opt/sonarqube
+    state: directory
+    owner: sonar
+    group: sonar
+    recurse: yes
+  become: yes
+
+# Configure sonar.properties for PostgreSQL
+- name: Configure sonar.properties for PostgreSQL
+  lineinfile:
+    path: /opt/sonarqube/conf/sonar.properties
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^sonar.jdbc.username=', line: 'sonar.jdbc.username=sonar' }
+    - { regexp: '^sonar.jdbc.password=', line: 'sonar.jdbc.password=sonar' }
+    - { regexp: '^sonar.jdbc.url=', line: 'sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube' }
+  become: yes
+
+# Create systemd service file for SonarQube
+- name: Create SonarQube systemd service
+  copy:
+    dest: /etc/systemd/system/sonarqube.service
+    content: |
+      [Unit]
+      Description=SonarQube service
+      After=syslog.target network.target
+
+      [Service]
+      Type=forking
+      ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+      ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+      User=sonar
+      Group=sonar
+      Restart=always
+      LimitNOFILE=65536
+      LimitNPROC=4096
+
+      [Install]
+      WantedBy=multi-user.target
+  become: yes
+
+# Reload systemd
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+# Enable and start SonarQube
+- name: Enable and start SonarQube
+  systemd:
+    name: sonarqube
+    state: started
+    enabled: yes
+  become: yes

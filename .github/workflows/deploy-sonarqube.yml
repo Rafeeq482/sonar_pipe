@@ -1,0 +1,36 @@
+name: Deploy SonarQube
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Terraform Init
+      run: terraform -chdir=terraform init
+
+    - name: Terraform Apply
+      id: tf_apply
+      run: terraform -chdir=terraform apply -auto-approve
+
+    - name: Get SonarQube IP
+      id: get_ip
+      run: |
+        echo "SONAR_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip)" >> $GITHUB_ENV
+
+    - name: Install Ansible
+      run: sudo apt update && sudo apt install -y ansible sshpass
+
+    - name: Prepare Ansible Inventory
+      run: echo "[sonarqube_servers]\n$SONAR_IP ansible_user=ubuntu ansible_ssh_private_key_file=./terraform/your-key.pem" > ansible/inventory.ini
+
+    - name: Run SonarQube Playbook
+      run: ansible-playbook -i ansible/inventory.ini ansible/install-sonarqube.yml
