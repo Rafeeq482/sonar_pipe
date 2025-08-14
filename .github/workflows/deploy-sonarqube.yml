@@ -12,7 +12,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TERRAFORM_WORKSPACE: default
-      TF_VAR_key_name: newacc
+      TF_VAR_key_name: SNS
 
     steps:
       - name: Checkout code
@@ -54,7 +54,7 @@ jobs:
       - name: Setup SSH key
         run: |
           echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > SNS.pem
-          chmod 600 newacc.pem
+          chmod 600 SNS.pem
 
       - name: Wait for SSH to become ready
         run: |
