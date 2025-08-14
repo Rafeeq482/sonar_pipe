@@ -2,19 +2,23 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Use default VPC if no VPC is provided
+# Get default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-data "aws_subnet_ids" "default" {
-  vpc_id = data.aws_vpc.default.id
+# Get subnets of the default VPC
+data "aws_subnets" "default_vpc" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
 }
 
+# Security group for SonarQube
 resource "aws_security_group" "sonar_sg" {
   name        = "sonar_sg"
   description = "Allow SSH and HTTP for SonarQube"
-  vpc_id      = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default.id
 
   ingress {
     from_port   = 22
@@ -38,11 +42,12 @@ resource "aws_security_group" "sonar_sg" {
   }
 }
 
+# EC2 instance for SonarQube
 resource "aws_instance" "sonarqube" {
   ami           = "ami-0f918f7e67a3323f0"
   instance_type = var.instance_type
   key_name      = var.key_name
-  subnet_id     = var.subnet_id != "" ? var.subnet_id : data.aws_subnet_ids.default.ids[0]
+  subnet_id     = data.aws_subnets.default_vpc.ids[0]  # first subnet in default VPC
   vpc_security_group_ids = [aws_security_group.sonar_sg.id]
 
   tags = {

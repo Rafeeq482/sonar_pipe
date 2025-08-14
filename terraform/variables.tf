@@ -9,11 +9,3 @@ variable "instance_type" {
 variable "key_name" {
   description = "Existing AWS Key Pair name"
 }
-
-variable "vpc_id" {
-  default = ""  # optional, will use default VPC if empty
-}
-
-variable "subnet_id" {
-  default = ""  # optional, will use first default subnet if empty
-}
