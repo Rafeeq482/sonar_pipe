@@ -53,7 +53,7 @@ jobs:
 
       - name: Setup SSH key
         run: |
-          echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > newacc.pem
+          echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > SNS.pem
           chmod 600 newacc.pem
 
       - name: Wait for SSH to become ready
@@ -68,12 +68,12 @@ jobs:
             sleep 10
           done
           # Final connectivity check using ssh
-          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i newacc.pem ubuntu@$INSTANCE_IP "echo 'SSH OK from runner'"
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i SNS.pem ubuntu@$INSTANCE_IP "echo 'SSH OK from runner'"
 
       - name: Run Ansible Playbook
         run: |
           echo "Running Ansible on $INSTANCE_IP"
-          ansible-playbook -i "$INSTANCE_IP," --private-key newacc.pem --user ubuntu ansible/install-sonarqube.yml
+          ansible-playbook -i "$INSTANCE_IP," --private-key SNS.pem --user ubuntu ansible/install-sonarqube.yml
 
       # If any step above fails, this step runs and destroys infra
       - name: Cleanup (destroy) on failure
