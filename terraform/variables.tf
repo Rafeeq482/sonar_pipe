@@ -7,9 +7,14 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "newacc"
+  default = "newacc"
+  description = "Existing AWS Key Pair name"
 }
 
-variable "vpc_id" {}
+variable "vpc_id" {
+  default = "vpc-02aec03ff83341eb5"
+}
 
-variable "subnet_id" {}
+variable "subnet_id" {
+  default = "subnet-0016310da050d13e8"
+}
