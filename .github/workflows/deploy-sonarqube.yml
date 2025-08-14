@@ -32,8 +32,9 @@ jobs:
       - name: Get instance IP
         id: ec2
         run: |
-          INSTANCE_IP=$(terraform -chdir=terraform output -raw instance_ip)
+          INSTANCE_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip)
           echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
+
 
       - name: Install Ansible
         run: |
