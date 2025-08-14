@@ -12,7 +12,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TERRAFORM_WORKSPACE: default
-      TF_VAR_key_name: newacc   # <-- your existing AWS key name
+      TF_VAR_key_name: newacc
 
     steps:
       - name: Checkout code
@@ -41,11 +41,14 @@ jobs:
 
           echo "==== STEP 3: Extract Pure IP ===="
           INSTANCE_IP=$(echo "$CLEAN_OUTPUT" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n 1)
+
+          if [ -z "$INSTANCE_IP" ]; then
+            echo "ERROR: Could not extract instance IP"
+            exit 1
+          fi
+
           echo "Final IP: $INSTANCE_IP"
-
-          echo "==== STEP 4: Save to GitHub Environment ===="
           echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
-
 
       - name: Install Ansible
         run: |
@@ -61,3 +64,10 @@ jobs:
         run: |
           echo "Running Ansible on ${{ env.INSTANCE_IP }}"
           ansible-playbook -i "${{ env.INSTANCE_IP }}," --private-key newacc.pem --user ubuntu install-sonarqube.yml
+
+      # CLEANUP STEP - runs only if any previous step fails
+      - name: Cleanup AWS resources
+        if: failure()
+        run: |
+          echo "Pipeline failed — cleaning up EC2 and security group..."
+          terraform -chdir=terraform destroy -auto-approve
