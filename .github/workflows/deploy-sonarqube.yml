@@ -32,10 +32,13 @@ jobs:
       - name: Get instance IP
         id: ec2
         run: |
-          # Capture the Terraform output reliably and remove any carriage returns
-          INSTANCE_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip | tr -d '\r')
+          # Use the real Terraform CLI binary to avoid GitHub Actions debug lines
+          TF_BIN=$(which terraform)
+          INSTANCE_IP=$($TF_BIN -chdir=terraform output -raw sonarqube_public_ip | tr -d '\r')
           echo "INSTANCE_IP=$INSTANCE_IP"
+          # Write to GitHub env in the correct format
           echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
+
 
       - name: Install Ansible
         run: |
