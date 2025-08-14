@@ -63,7 +63,7 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           echo "Running Ansible on ${{ env.INSTANCE_IP }}"
-          ansible-playbook -i "${{ env.INSTANCE_IP }}," --private-key newacc.pem --user ubuntu install-sonarqube.yml
+          ansible-playbook -i "${{ env.INSTANCE_IP }}," --private-key newacc.pem --user ubuntu ansible/install-sonarqube.yml
 
       # CLEANUP STEP - runs only if any previous step fails
       - name: Cleanup AWS resources
