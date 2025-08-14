@@ -7,14 +7,13 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  default = "SNS"
   description = "Existing AWS Key Pair name"
 }
 
 variable "vpc_id" {
-  default = "vpc-0b43e23e0c149998b"
+  default = ""  # optional, will use default VPC if empty
 }
 
 variable "subnet_id" {
-  default = "subnet-06cdf6a7520a97aee"
+  default = ""  # optional, will use first default subnet if empty
 }
