@@ -44,7 +44,7 @@ jobs:
       - name: Setup SSH key
         run: |
           echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > newacc.pem
-          chmod 400 newacc.pem
+          chmod 600 newacc.pem
 
       - name: Run Ansible Playbook
         run: |
