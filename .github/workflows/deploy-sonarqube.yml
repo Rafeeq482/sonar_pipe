@@ -12,9 +12,9 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TERRAFORM_WORKSPACE: default
-      TF_VAR_key_name: SNS        # your existing AWS key
-      TF_VAR_vpc_id: ""              # optional, default VPC used if empty
-      TF_VAR_subnet_id: ""           # optional, first default subnet used if empty
+      TF_VAR_key_name: newacc           # <-- your existing AWS key name
+      TF_VAR_vpc_id: ""                 # Optional: leave empty for default VPC
+      TF_VAR_subnet_id: ""              # Optional: leave empty for default subnet
 
     steps:
       - name: Checkout code
@@ -31,10 +31,10 @@ jobs:
       - name: Terraform Apply
         run: terraform -chdir=terraform apply -auto-approve
 
-      - name: Get SonarQube instance IP
+      - name: Get instance IP
         id: ec2
         run: |
-          INSTANCE_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip)
+          INSTANCE_IP=$(terraform -chdir=terraform output -raw sonarqube_public_ip | tr -d '\r')
           echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_ENV
 
       - name: Install Ansible
@@ -47,6 +47,6 @@ jobs:
           echo "${{ secrets.NEWACC_PRIVATE_KEY }}" > newacc.pem
           chmod 600 newacc.pem
 
-      - name: Run Ansible Playbook on SonarQube instance
+      - name: Run Ansible Playbook
         run: |
           ansible-playbook -i "${{ env.INSTANCE_IP }}," --private-key newacc.pem --user ubuntu install-sonarqube.yml
