@@ -127,6 +127,8 @@
       Restart=always
       LimitNOFILE=65536
       LimitNPROC=4096
+      Environment="SONAR_JAVA_OPTS=-Xms1024m -Xmx3048m"
+
 
       [Install]
       WantedBy=multi-user.target
