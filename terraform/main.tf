@@ -44,7 +44,7 @@ resource "aws_security_group" "sonar_sg" {
 
 # EC2 instance for SonarQube
 resource "aws_instance" "sonarqube" {
-  ami                         = "ami-0f918f7e67a3323f0"
+  ami                         = "ami-02d26659fd82cf299"
   instance_type               = var.instance_type
   key_name                    = var.key_name
   subnet_id                   = data.aws_subnets.default_vpc.ids[0]
