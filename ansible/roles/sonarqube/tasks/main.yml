@@ -12,6 +12,7 @@
       - postgresql
       - postgresql-contrib
       - unzip
+      - unrar
       - wget
     state: present
     update_cache: yes
